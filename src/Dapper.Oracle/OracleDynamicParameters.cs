@@ -1,4 +1,4 @@
-﻿//// Based on Gist found here: https://gist.github.com/vijaysg/3096151
+//// Based on Gist found here: https://gist.github.com/vijaysg/3096151
 
 using System;
 using System.Collections;
@@ -109,6 +109,7 @@ namespace Dapper.Oracle
         /// <param name="sourceColumn"></param>
         /// <param name="sourceVersion"></param>
         /// <param name="collectionType"></param>
+        /// <param name="maskValueWhenLogging">a flag that this param contains sensitive data and it must be masked in case of logging values</param>
         public void Add(
             string name,
             object value = null,
@@ -121,7 +122,8 @@ namespace Dapper.Oracle
             string sourceColumn = null,
             DataRowVersion? sourceVersion = null,
             OracleMappingCollectionType? collectionType = null,
-            int[] arrayBindSize = null)
+            int[] arrayBindSize = null,
+            bool maskValueWhenLogging = false)
         {
             Parameters[Clean(name)] = new OracleParameterInfo()
             {
@@ -136,7 +138,8 @@ namespace Dapper.Oracle
                 SourceColumn = sourceColumn,
                 SourceVersion = sourceVersion ?? DataRowVersion.Current,
                 CollectionType = collectionType ?? OracleMappingCollectionType.None,
-                ArrayBindSize = arrayBindSize
+                ArrayBindSize = arrayBindSize,
+                MaskValueWhenLogging = maskValueWhenLogging
             };
         }
 
@@ -167,7 +170,7 @@ namespace Dapper.Oracle
                 }
                 return default(T);
             }
-            
+
             return OracleValueConverter.Convert<T>(val);
         }
 
@@ -239,10 +242,10 @@ namespace Dapper.Oracle
                 }
 
                 OracleMethodHelper.SetOracleParameters(p, param);
-                
+
                 p.Direction = param.ParameterDirection;
-                
-                var val = param.Value;                
+
+                var val = param.Value;
 
                 if (val != null && OracleTypeMapper.HasTypeHandler(val.GetType(), out var handler))
                 {
@@ -251,7 +254,7 @@ namespace Dapper.Oracle
                 else
                 {
                     p.Value = val ?? DBNull.Value;
-                    
+
                     var s = val as string;
                     if (s?.Length <= 4000)
                     {
@@ -262,8 +265,8 @@ namespace Dapper.Oracle
                     {
                         p.Size = param.Size.Value;
                     }
-                }                
-                               
+                }
+
                 if (add)
                 {
                     command.Parameters.Add(p);
@@ -320,6 +323,8 @@ namespace Dapper.Oracle
             public OracleParameterMappingStatus Status { get; set; }
 
             public IDbDataParameter AttachedParam { get; set; }
+
+            public bool MaskValueWhenLogging { get; set; }
         }
 
         /// <summary>
