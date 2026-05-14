@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text;
 using Dapper.Oracle;
 using FluentAssertions;
@@ -247,6 +247,22 @@ namespace Tests.Dapper.Oracle
             var result = OracleValueConverter.Convert<decimal>(new OracleDecimal(expected));
 
             result.Should().Be(expected);
+        }
+
+        [Fact]
+        public void GetOracleDecimalMatchesExplicitSetPrecision28()
+        {
+            foreach (var d in new[]
+                     {
+                         0m,
+                         1m,
+                         0.4690679611650485436893203883m,
+                     })
+            {
+                var od = new OracleDecimal(d);
+                var expected = OracleDecimal.SetPrecision(od, 28).Value;
+                OracleValueConverter.Convert<decimal>(od).Should().Be(expected);
+            }
         }
 
         [Fact]
