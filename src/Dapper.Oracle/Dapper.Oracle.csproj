@@ -1,23 +1,25 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
     <Import Project="..\common.targets" />
     <PropertyGroup>
         <IsTestProject>false</IsTestProject>
-        <TargetFrameworks>net7.0</TargetFrameworks>
+        <TargetFrameworks>net10.0</TargetFrameworks>
     </PropertyGroup>
 
 	<PropertyGroup>
 		<PackageReleaseNotes>
-Version 2.0.4:
- - Updated to use .net 7.0.
- - Dependency switched to most recent version of Dapper: 2.0.123.
- - Dependencies updated also for test project.
-		</PackageReleaseNotes>
+      Version 2.1.0:
+      - Updated to use .net 10.0.
+      - Dependency switched to most recent version of Dapper: 2.1.66.
+      - Dependencies updated also for test project.
+      - Fix OracleDecimal to System.Decimal conversion overflow handling
+      - Enriching OracleParameterInfo with flag for PII data
+    </PackageReleaseNotes>
 		<!--<PackageReadmeFile>..\..\README.MD</PackageReadmeFile>-->
 	</PropertyGroup>
 
 	<ItemGroup>
-        <PackageReference Include="Dapper" Version="2.0.123" />
+        <PackageReference Include="Dapper" Version="2.1.66" />
     </ItemGroup>
 
     <ItemGroup>
