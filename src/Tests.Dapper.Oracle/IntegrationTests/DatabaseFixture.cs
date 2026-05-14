@@ -35,9 +35,8 @@ namespace Tests.Dapper.Oracle.IntegrationTests
 
         public async Task InitializeAsync()
         {
+            // Prefer DA_OR_CONNECTION (CI / local Oracle). Do not overwrite it — a hardcoded default used to break env-based runs.
             var connectionString = Environment.GetEnvironmentVariable("DA_OR_CONNECTION");
-
-            connectionString = "Data Source=localhost/dips;User Id=system;Password=oracle";
 
             if (string.IsNullOrEmpty(connectionString))
             {
