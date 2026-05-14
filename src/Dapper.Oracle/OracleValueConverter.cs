@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data.Common;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Emit;
 using System.Text.RegularExpressions;
 
@@ -126,7 +127,10 @@ namespace Dapper.Oracle
                     var decimalArray = new decimal[arr.Length];
                     for (int i = 0; i < arr.Length; i++)
                     {
-                        decimalArray[i] = decimal.Parse(arr.GetValue(i)?.ToString());
+                        var raw = arr.GetValue(i);
+                        decimalArray[i] = TryReduceOracleDecimalToSystemDecimal(raw, out var systemDecimal)
+                            ? systemDecimal
+                            : decimal.Parse(raw?.ToString() ?? "0");
                     }
                     return (T)System.Convert.ChangeType(decimalArray, nullableType ?? typeof(T));
                 case "System.Boolean[]":
@@ -187,6 +191,12 @@ namespace Dapper.Oracle
                     return null;
                 }
 
+                // Legacy ADO.NET: OracleDecimal.SetPrecision(..., 28).Value — no compile-time reference to Oracle.ManagedDataAccess.
+                if (TryReduceOracleDecimalToSystemDecimal(value, out var asDecimal))
+                {
+                    return asDecimal;
+                }
+
                 var val = valueType.GetProperty("Value")?.GetValue(value);
                 if (val != null)
                 {
@@ -207,6 +217,46 @@ namespace Dapper.Oracle
             // We need this, because, you know, Oracle.  OracleDecimal,OracleFloat,OracleYaddiAddy,OracleYourUncle etc value types.    
             // See: https://docs.oracle.com/en/database/oracle/oracle-database/19/odpnt/intro003.html#GUID-425C9EBA-CFFC-47FE-B490-604251714ACA
             return Regex.IsMatch(valueType.FullName, @"Oracle\.\w+\.Types\.Oracle\w+");
+        }
+
+        private const string OracleDecimalTypeFullName = "Oracle.ManagedDataAccess.Types.OracleDecimal";
+
+        private static bool IsOracleDecimal(Type type) =>
+            type != null && type.FullName == OracleDecimalTypeFullName;
+
+        /// <summary>
+        /// Calls <c>OracleDecimal.SetPrecision(instance, 28).Value</c> via reflection when ODP.NET is loaded at runtime.
+        /// </summary>
+        private static bool TryReduceOracleDecimalToSystemDecimal(object value, out decimal systemDecimal)
+        {
+            systemDecimal = default;
+            if (value == null || !IsOracleDecimal(value.GetType()))
+            {
+                return false;
+            }
+
+            var t = value.GetType();
+            var setPrecision = t.GetMethod(
+                "SetPrecision",
+                BindingFlags.Public | BindingFlags.Static,
+                binder: null,
+                types: new[] { t, typeof(int) },
+                modifiers: null);
+            if (setPrecision == null)
+            {
+                return false;
+            }
+
+            var reduced = setPrecision.Invoke(null, new object[] { value, 28 });
+            var valueProp = t.GetProperty("Value");
+            var boxed = valueProp?.GetValue(reduced);
+            if (boxed is decimal d)
+            {
+                systemDecimal = d;
+                return true;
+            }
+
+            return false;
         }
     }
 }
