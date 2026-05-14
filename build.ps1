@@ -11,4 +11,4 @@ if ($connectionstring)
 dotnet restore .\src\Dapper.Oracle.sln
 dotnet build .\src\Dapper.Oracle.sln
 dotnet test .\src\Dapper.Oracle.sln
-dotnet pack .\src\Dapper.Oracle.sln -p:PackageVersion=2.0.4
+dotnet pack .\src\Dapper.Oracle.sln -p:PackageVersion=2.1.0
